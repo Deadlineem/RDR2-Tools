@@ -1,127 +1,300 @@
 <?php
-require_once 'assets/php/connect.php';
+// =============================================
+// CONFIGURATION - Toggle between data sources
+// =============================================
+// Set to false for GitHub Pages (JSON mode)
+// Set to true for traditional hosting (Database mode)
+define('USE_DATABASE', false);
+// =============================================
+
+// Navigation (always needed)
 require_once 'assets/php/nav.php';
 
-// Get search parameters
-$search = isset($_GET['search']) ? trim($_GET['search']) : '';
-$namespace = isset($_GET['namespace']) ? trim($_GET['namespace']) : '';
-$page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
-$perPage = isset($_GET['per_page']) ? min(200, max(1, (int)$_GET['per_page'])) : 50;
-$offset = ($page - 1) * $perPage;
-$selectedId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
-
-// Build the query
-$sql = "SELECT 
-            n.id,
-            n.hash,
-            n.name,
-            n.return_type,
-            n.params,
-            n.comment,
-            n.build,
-            n.gta_hash,
-            n.gta_jhash,
-            ns.name as namespace
-        FROM natives n
-        JOIN namespaces ns ON n.namespace_id = ns.id
-        WHERE 1=1";
-
-$params = [];
-
-// Namespace filter
-if (!empty($namespace)) {
-    $sql .= " AND ns.name = ?";
-    $params[] = $namespace;
-}
-
-// Search term
-if (!empty($search)) {
-    $terms = explode(' ', $search);
-    $whereConditions = [];
+// =============================================
+// DATABASE MODE (Traditional Hosting)
+// =============================================
+if (USE_DATABASE) {
+    // Database connection
+    require_once 'assets/php/connect.php';
     
-    foreach ($terms as $term) {
-        if (strlen($term) < 2) continue;
-        $term = '%' . $term . '%';
-        $whereConditions[] = "(n.name LIKE ? OR ns.name LIKE ? OR n.comment LIKE ? OR n.hash LIKE ?)";
-        $params[] = $term;
-        $params[] = $term;
-        $params[] = $term;
-        $params[] = $term;
+    // --- Original Database Query Logic ---
+    // Get search parameters
+    $search = isset($_GET['search']) ? trim($_GET['search']) : '';
+    $namespace = isset($_GET['namespace']) ? trim($_GET['namespace']) : '';
+    $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
+    $perPage = isset($_GET['per_page']) ? min(200, max(1, (int)$_GET['per_page'])) : 50;
+    $offset = ($page - 1) * $perPage;
+    $selectedId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+
+    // Build the query
+    $sql = "SELECT 
+                n.id,
+                n.hash,
+                n.name,
+                n.return_type,
+                n.params,
+                n.comment,
+                n.build,
+                n.gta_hash,
+                n.gta_jhash,
+                ns.name as namespace
+            FROM natives n
+            JOIN namespaces ns ON n.namespace_id = ns.id
+            WHERE 1=1";
+
+    $params = [];
+
+    // Namespace filter
+    if (!empty($namespace)) {
+        $sql .= " AND ns.name = ?";
+        $params[] = $namespace;
     }
-    
-    if (!empty($whereConditions)) {
-        $sql .= " AND (" . implode(' OR ', $whereConditions) . ")";
+
+    // Search term
+    if (!empty($search)) {
+        $terms = explode(' ', $search);
+        $whereConditions = [];
+        
+        foreach ($terms as $term) {
+            if (strlen($term) < 2) continue;
+            $term = '%' . $term . '%';
+            $whereConditions[] = "(n.name LIKE ? OR ns.name LIKE ? OR n.comment LIKE ? OR n.hash LIKE ?)";
+            $params[] = $term;
+            $params[] = $term;
+            $params[] = $term;
+            $params[] = $term;
+        }
+        
+        if (!empty($whereConditions)) {
+            $sql .= " AND (" . implode(' OR ', $whereConditions) . ")";
+        }
     }
+
+    // Get total count
+    $countSql = str_replace(
+        "SELECT 
+                n.id,
+                n.hash,
+                n.name,
+                n.return_type,
+                n.params,
+                n.comment,
+                n.build,
+                n.gta_hash,
+                n.gta_jhash,
+                ns.name as namespace",
+        "SELECT COUNT(*) as total",
+        $sql
+    );
+
+    $stmt = $pdo->prepare($countSql);
+    $stmt->execute($params);
+    $total = (int)$stmt->fetch()['total'];
+
+    // Get paginated results
+    $sql .= " ORDER BY ns.name, n.name LIMIT ? OFFSET ?";
+    $params[] = $perPage;
+    $params[] = $offset;
+
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
+    $results = $stmt->fetchAll();
+
+    // Get selected native details
+    $selectedNative = null;
+    if ($selectedId > 0) {
+        $stmt = $pdo->prepare("
+            SELECT 
+                n.id,
+                n.hash,
+                n.name,
+                n.return_type,
+                n.params,
+                n.comment,
+                n.build,
+                n.gta_hash,
+                n.gta_jhash,
+                ns.name as namespace
+            FROM natives n
+            JOIN namespaces ns ON n.namespace_id = ns.id
+            WHERE n.id = ?
+        ");
+        $stmt->execute([$selectedId]);
+        $selectedNative = $stmt->fetch();
+    } elseif (!empty($results)) {
+        // Auto-select first result
+        $selectedNative = $results[0];
+        $selectedId = $selectedNative['id'];
+    }
+
+    // Get all namespaces for dropdown
+    $namespaceStmt = $pdo->query("SELECT id, name, native_count FROM namespaces ORDER BY name");
+    $namespaces = $namespaceStmt->fetchAll();
+
+    // Stats
+    $statsStmt = $pdo->query("SELECT COUNT(*) as total FROM natives");
+    $totalNatives = $statsStmt->fetch()['total'];
 }
 
-// Get total count
-$countSql = str_replace(
-    "SELECT 
-            n.id,
-            n.hash,
-            n.name,
-            n.return_type,
-            n.params,
-            n.comment,
-            n.build,
-            n.gta_hash,
-            n.gta_jhash,
-            ns.name as namespace",
-    "SELECT COUNT(*) as total",
-    $sql
-);
+// =============================================
+// JSON MODE (GitHub Pages)
+// =============================================
+if (!USE_DATABASE) {
+    // --- JSON Data Fetching ---
+    $jsonUrl = 'https://alloc8or.re/rdr3/nativedb/static/natives.json?_=1784580002';
+    $jsonData = null;
+    $nativeData = []; // Flat list of all natives
+    $namespaceData = []; // Namespace info with counts
 
-$stmt = $pdo->prepare($countSql);
-$stmt->execute($params);
-$total = (int)$stmt->fetch()['total'];
+    // Fetch the JSON data
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $jsonUrl);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false); // Consider enabling for production
 
-// Get paginated results
-$sql .= " ORDER BY ns.name, n.name LIMIT ? OFFSET ?";
-$params[] = $perPage;
-$params[] = $offset;
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
 
-$stmt = $pdo->prepare($sql);
-$stmt->execute($params);
-$results = $stmt->fetchAll();
+    if ($httpCode === 200 && $response !== false) {
+        $jsonData = json_decode($response, true);
+    }
 
-// Get selected native details
-$selectedNative = null;
-if ($selectedId > 0) {
-    $stmt = $pdo->prepare("
-        SELECT 
-            n.id,
-            n.hash,
-            n.name,
-            n.return_type,
-            n.params,
-            n.comment,
-            n.build,
-            n.gta_hash,
-            n.gta_jhash,
-            ns.name as namespace
-        FROM natives n
-        JOIN namespaces ns ON n.namespace_id = ns.id
-        WHERE n.id = ?
-    ");
-    $stmt->execute([$selectedId]);
-    $selectedNative = $stmt->fetch();
-} elseif (!empty($results)) {
-    // Auto-select first result
-    $selectedNative = $results[0];
-    $selectedId = $selectedNative['id'];
+    if ($jsonData === null) {
+        // Handle error gracefully - show message or fallback
+        die('Error: Could not fetch native data. Please try again later.');
+    }
+
+    // Process JSON data into a flat array and namespace stats
+    $allNatives = [];
+    $namespaceCounts = [];
+
+    foreach ($jsonData as $namespace => $natives) {
+        if (!isset($namespaceCounts[$namespace])) {
+            $namespaceCounts[$namespace] = 0;
+        }
+        foreach ($natives as $hash => $details) {
+            // Add namespace to each native for easy access
+            $details['namespace'] = $namespace;
+            $details['hash'] = $hash; // Store the full hash
+            // Ensure params is always an array
+            if (!isset($details['params']) || !is_array($details['params'])) {
+                $details['params'] = [];
+            }
+            $allNatives[] = $details;
+            $namespaceCounts[$namespace]++;
+        }
+    }
+
+    $nativeData = $allNatives;
+    // Build namespace data for dropdown
+    $namespaceData = [];
+    foreach ($namespaceCounts as $name => $count) {
+        $namespaceData[] = ['name' => $name, 'native_count' => $count];
+    }
+    usort($namespaceData, function($a, $b) {
+        return strcmp($a['name'], $b['name']);
+    });
+
+    // --- JSON Mode Search Logic ---
+    // Get search parameters
+    $search = isset($_GET['search']) ? trim($_GET['search']) : '';
+    $namespace = isset($_GET['namespace']) ? trim($_GET['namespace']) : '';
+    $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
+    $perPage = isset($_GET['per_page']) ? min(200, max(1, (int)$_GET['per_page'])) : 50;
+    $offset = ($page - 1) * $perPage;
+    $selectedId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+
+    // Filter and search
+    $filteredResults = $nativeData;
+
+    // Namespace filter
+    if (!empty($namespace)) {
+        $filteredResults = array_filter($filteredResults, function($native) use ($namespace) {
+            return $native['namespace'] === $namespace;
+        });
+    }
+
+    // Search term (text search on name, namespace, comment, hash)
+    if (!empty($search)) {
+        $terms = explode(' ', $search);
+        $filteredResults = array_filter($filteredResults, function($native) use ($terms) {
+            $searchableText = strtolower(
+                $native['name'] . ' ' .
+                $native['namespace'] . ' ' .
+                ($native['comment'] ?? '') . ' ' .
+                ($native['hash'] ?? '')
+            );
+            foreach ($terms as $term) {
+                if (strlen($term) < 2) continue;
+                if (strpos($searchableText, strtolower($term)) === false) {
+                    return false;
+                }
+            }
+            return true;
+        });
+    }
+
+    // Re-index array after filtering
+    $filteredResults = array_values($filteredResults);
+
+    // Get total count after filtering
+    $total = count($filteredResults);
+
+    // Pagination
+    $totalPages = ceil($total / $perPage);
+    $page = min($page, max(1, $totalPages)); // Ensure page is valid
+    $offset = ($page - 1) * $perPage;
+    $results = array_slice($filteredResults, $offset, $perPage);
+
+    // Get selected native details
+    $selectedNative = null;
+    if ($selectedId > 0 && $selectedId < count($nativeData)) {
+        $selectedNative = $nativeData[$selectedId] ?? null;
+        if ($selectedNative) {
+            // Ensure namespace is set for selected native
+            if (!isset($selectedNative['namespace'])) {
+                foreach ($jsonData as $ns => $natives) {
+                    foreach ($natives as $hash => $details) {
+                        if ($details === $selectedNative) {
+                            $selectedNative['namespace'] = $ns;
+                            break 2;
+                        }
+                    }
+                }
+            }
+        }
+    } elseif (!empty($results)) {
+        // Auto-select first result
+        $selectedNative = $results[0];
+        // Find its ID (index in original array)
+        $selectedId = array_search($selectedNative, $nativeData, true);
+        if ($selectedId === false) {
+            // Fallback: find by hash/name combo
+            foreach ($nativeData as $index => $n) {
+                if ($n['hash'] === $selectedNative['hash'] && $n['name'] === $selectedNative['name']) {
+                    $selectedId = $index;
+                    break;
+                }
+            }
+        }
+    }
+
+    // Stats (from JSON data)
+    $totalNatives = count($nativeData);
+    $namespaces = $namespaceData; // Already built above
 }
 
-// Get all namespaces for dropdown
-$namespaceStmt = $pdo->query("SELECT id, name, native_count FROM namespaces ORDER BY name");
-$namespaces = $namespaceStmt->fetchAll();
-
-// Stats
-$statsStmt = $pdo->query("SELECT COUNT(*) as total FROM natives");
-$totalNatives = $statsStmt->fetch()['total'];
+// =============================================
+// SHARED HELPER FUNCTIONS (Works for both modes)
+// =============================================
 
 // Format params for display
 function formatParams($paramsJson) {
     if (empty($paramsJson)) return [];
+    if (is_array($paramsJson)) return $paramsJson;
     $params = json_decode($paramsJson, true);
     if (!is_array($params)) return [];
     return $params;
@@ -162,6 +335,10 @@ function getReturnDescription($type) {
     ];
     return isset($desc[$type]) ? $desc[$type] : $type;
 }
+
+// =============================================
+// HTML OUTPUT (Same for both modes)
+// =============================================
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -170,6 +347,8 @@ function getReturnDescription($type) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
     <title>RDR3 NativeDB Explorer</title>
     <style>
+        /* All your existing CSS styles remain exactly the same */
+        /* (Copy the entire CSS block from your original file here) */
         * {
             margin: 0;
             padding: 0;
@@ -1306,10 +1485,25 @@ function getReturnDescription($type) {
                         <p style="font-size:12px; color:var(--text-muted); margin-top:4px;">Try adjusting your search</p>
                     </div>
                 <?php else: ?>
-                    <?php foreach ($results as $native): ?>
-                        <div class="native-item <?php echo $native['id'] == $selectedId ? 'active' : ''; ?>" 
-                             data-id="<?php echo $native['id']; ?>"
-                             onclick="selectNative(<?php echo $native['id']; ?>)">
+                    <?php foreach ($results as $native): 
+                        // For database mode, use ID; for JSON mode, find index
+                        if (USE_DATABASE) {
+                            $nativeId = $native['id'];
+                        } else {
+                            $nativeId = array_search($native, $nativeData, true);
+                            if ($nativeId === false) {
+                                foreach ($nativeData as $idx => $n) {
+                                    if ($n['hash'] === $native['hash'] && $n['name'] === $native['name']) {
+                                        $nativeId = $idx;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    ?>
+                        <div class="native-item <?php echo $nativeId == $selectedId ? 'active' : ''; ?>" 
+                             data-id="<?php echo $nativeId; ?>"
+                             onclick="selectNative(<?php echo $nativeId; ?>)">
                             <span class="item-name"><?php echo htmlspecialchars($native['name']); ?></span>
                             <span class="item-namespace"><?php echo htmlspecialchars($native['namespace']); ?></span>
                             <span class="item-hash"><?php echo substr($native['hash'], 0, 10); ?>…</span>
@@ -1418,8 +1612,8 @@ function getReturnDescription($type) {
                     </div>
                 </div>
                 
-				<p style="font-size:13px; color:var(--text-muted); margin-top:8px;">Copy Native copies the entire native to clipboard (Ex: Namespace::Native(Ped param1, Hash param2))</p>
-				
+                <p style="font-size:13px; color:var(--text-muted); margin-top:8px;">Copy Native copies the entire native to clipboard (Ex: Namespace::Native(Ped param1, Hash param2))</p>
+                
                 <div class="detail-actions">
                     <button class="btn" onclick="copyText('<?php echo htmlspecialchars($selectedNative['hash']); ?>')">📋 Copy Hash</button>
                     <button class="btn btn-success" onclick="copyText('<?php echo htmlspecialchars($signature); ?>')">📋 Copy Native</button>
@@ -1479,8 +1673,6 @@ function getReturnDescription($type) {
         const pagination = document.getElementById('pagination');
         
         // Debounced search
-        // Fetch the normal PHP page in the background, then replace ONLY #nativeList.
-        // The document itself is never navigated/reloaded, so the search input keeps focus.
         let searchController = null;
         let searchRequestId = 0;
 
@@ -1549,10 +1741,8 @@ function getReturnDescription($type) {
                     throw new Error('The search response did not contain #nativeList.');
                 }
 
-                // Replace ONLY the native results. The rest of the page is untouched.
                 nativeList.innerHTML = newNativeList.innerHTML;
 
-                // Update the URL without navigating/reloading the page.
                 window.history.replaceState(
                     null,
                     '',
@@ -1582,7 +1772,6 @@ function getReturnDescription($type) {
             }
         }
 
-        // Live search on input
         searchInput.addEventListener('input', function() {
             const val = this.value.trim();
             searchClear.classList.toggle('visible', val.length > 0);
@@ -1593,12 +1782,10 @@ function getReturnDescription($type) {
             }, 300);
         });
         
-        // Namespace select change
         namespaceSelect.addEventListener('change', function() {
             performSearch();
         });
         
-        // Clear search
         function clearSearch() {
             clearTimeout(searchTimeout);
             searchInput.value = '';
@@ -1610,7 +1797,6 @@ function getReturnDescription($type) {
             });
         }
 
-        // Select native (for mobile touch)
         function selectNative(id) {
             const params = new URLSearchParams(window.location.search);
             params.set('id', id);
@@ -1618,7 +1804,6 @@ function getReturnDescription($type) {
             window.location.href = '?' + params.toString();
         }
         
-        // Copy text to clipboard
         function copyText(text) {
             if (navigator.clipboard && navigator.clipboard.writeText) {
                 navigator.clipboard.writeText(text).then(() => {
@@ -1657,40 +1842,33 @@ function getReturnDescription($type) {
             }, 3000);
         }
         
-        // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
-            // Ctrl+F / Cmd+F - focus search
             if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
                 e.preventDefault();
                 searchInput.focus();
                 searchInput.select();
             }
-            // Escape - clear search
             if (e.key === 'Escape' && document.activeElement === searchInput) {
                 clearSearch();
             }
         });
         
-        // Auto-scroll selected item into view
         document.addEventListener('DOMContentLoaded', () => {
             const activeItem = document.querySelector('.native-item.active');
             if (activeItem) {
                 activeItem.scrollIntoView({ block: 'center', behavior: 'smooth' });
             }
             
-            // Show clear button if search has value
             if (searchInput.value.trim().length > 0) {
                 searchClear.classList.add('visible');
             }
         });
         
-        // Handle pagination clicks without full page reload (progressive enhancement)
         document.querySelectorAll('.pagination .btn:not([disabled])').forEach(link => {
             link.addEventListener('click', function(e) {
                 const href = this.getAttribute('href');
                 if (href && href.startsWith('?')) {
                     e.preventDefault();
-                    // Preserve the selected native ID
                     const params = new URLSearchParams(href.substring(1));
                     const currentId = new URLSearchParams(window.location.search).get('id');
                     if (currentId) {
