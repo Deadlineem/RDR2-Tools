@@ -1,37 +1,5 @@
 <?php
-define('DB_HOST', 'localhost');
-define('DB_NAME', 'rdr3_nativedb');
-define('DB_USER', 'Database Username');
-define('DB_PASS', 'Database Password');
-define('DB_CHARSET', 'utf8mb4');
-
-// Navigation items - include the same nav structure
-$navItems = [
-    'natives' => [
-        'label' => '📋 Natives',
-        'url' => 'index.php',
-        'active' => false
-    ],
-    'tools' => [
-        'label' => '🔧 Tools',
-        'url' => '#',
-        'active' => false,
-        'submenu' => [
-            ['label' => '🔄 List Converter', 'url' => 'converter.php'],
-			['label' => '⚡ Script Generator', 'url' => 'creator.php'],
-        ]
-    ],
-    'documentation' => [
-        'label' => '📚 Docs',
-        'url' => '#',
-        'active' => false
-    ],
-    'about' => [
-        'label' => 'ℹ️ About',
-        'url' => '#',
-        'active' => false
-    ]
-];
+require_once 'assets/php/nav.php';
 
 // Handle AJAX conversion requests
 if (isset($_POST['action']) && $_POST['action'] === 'convert') {

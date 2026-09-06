@@ -1,27 +1,6 @@
 <?php
-define('DB_HOST', 'localhost');
-define('DB_NAME', 'rdr3_nativedb');
-define('DB_USER', 'Database Username');
-define('DB_PASS', 'Database Password');
-define('DB_CHARSET', 'utf8mb4');
-
-// Database connection
-function getDBConnection() {
-    $dsn = "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=" . DB_CHARSET;
-    $options = [
-        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-        PDO::ATTR_EMULATE_PREPARES => false,
-    ];
-    
-    try {
-        return new PDO($dsn, DB_USER, DB_PASS, $options);
-    } catch (PDOException $e) {
-        die("Database connection failed: " . $e->getMessage());
-    }
-}
-
-$pdo = getDBConnection();
+require_once 'assets/php/connect.php';
+require_once 'assets/php/nav.php';
 
 // Get search parameters
 $search = isset($_GET['search']) ? trim($_GET['search']) : '';
@@ -183,34 +162,6 @@ function getReturnDescription($type) {
     ];
     return isset($desc[$type]) ? $desc[$type] : $type;
 }
-
-// Navigation items - easy to extend
-$navItems = [
-    'natives' => [
-        'label' => '📋 Natives',
-        'url' => 'index.php',
-        'active' => false
-    ],
-    'tools' => [
-        'label' => '🔧 Tools',
-        'url' => '#',
-        'active' => false,
-        'submenu' => [
-            ['label' => '🔄 List Converter', 'url' => 'converter.php'],
-			['label' => '⚡ Script Generator', 'url' => 'creator.php'],
-        ]
-    ],
-    'documentation' => [
-        'label' => '📚 Docs',
-        'url' => '#',
-        'active' => false
-    ],
-    'about' => [
-        'label' => 'ℹ️ About',
-        'url' => '#',
-        'active' => false
-    ]
-];
 ?>
 <!DOCTYPE html>
 <html lang="en">

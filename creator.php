@@ -1,37 +1,5 @@
 <?php
-define('DB_HOST', 'localhost');
-define('DB_NAME', 'rdr3_nativedb');
-define('DB_USER', 'Database Username');
-define('DB_PASS', 'Database Password');
-define('DB_CHARSET', 'utf8mb4');
-
-// Navigation items
-$navItems = [
-    'natives' => [
-        'label' => '📋 Natives',
-        'url' => 'index.php',
-        'active' => false
-    ],
-    'tools' => [
-        'label' => '🔧 Tools',
-        'url' => '#',
-        'active' => false,
-        'submenu' => [
-            ['label' => '🔄 List Converter', 'url' => 'converter.php'],
-            ['label' => '⚡ Script Generator', 'url' => 'creator.php'],
-        ]
-    ],
-    'documentation' => [
-        'label' => '📚 Docs',
-        'url' => '#',
-        'active' => false
-    ],
-    'about' => [
-        'label' => 'ℹ️ About',
-        'url' => '#',
-        'active' => false
-    ]
-];
+require_once 'assets/php/nav.php';
 
 // Handle AJAX generation request - MUST be before any HTML output
 if (isset($_POST['action']) && $_POST['action'] === 'generate') {
@@ -899,8 +867,8 @@ function generateCommandCode($type, $className, $commandId, $displayName, $descr
 
     <div class="container">
         <div class="page-header">
-            <h1>⚡ YimMenu Script Generator</h1>
-            <p>Generate command classes for HorseMenu (YimMenu-style) with proper includes and structure.</p>
+            <h1>⚡ Script Generator</h1>
+            <p>Generate features for YimMenuV2/HorseMenu/ChronixV2/Helix with proper includes and structure.</p>
         </div>
         
         <div class="generator-grid">
