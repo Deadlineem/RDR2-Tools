@@ -15,27 +15,27 @@ Generate ready-to-use command classes for YimMenuV2, Helix, HorseMenu, and Chron
 
 ## 🚀 Installation
 
-### 1. Database Setup
-1. Locate the `rdr3_nativedb_detailed.sql` file in the repository
-2. Import it into your MySQL database using phpMyAdmin or command line:
+### 1. Database Setup (Optional)
+Note: If you do NOT want to use the databases, set `define('USE_DATABASE', false);` in index.php/gta.php
+1. Locate the `rdr3_nativedb_detailed.sql` & `gta5_nativedb_detailed.sql` files in the repository
+2. Import them into your MySQL database using phpMyAdmin or command line:
 ```bash
 mysql -u your_username -p your_database < rdr3_nativedb_detailed.sql
 ```
-This will create the `rdr3_nativedb` database with all native function data pre-populated.
+This will create the `rdr3_nativedb` & `gta5_nativedb` databases with all native function data pre-populated.
 
 ### 2. Configuration
-Edit the database credentials in `index.php`, `converter.php`, and `creator.php`:
+Edit the database credentials in `assets/php/connect.php` (No need to fill out table names, it fetches them for you):
 
 ```php
 define('DB_HOST', 'localhost');
-define('DB_NAME', 'rdr3_nativedb');
 define('DB_USER', 'your_username');
 define('DB_PASS', 'your_password');
 define('DB_CHARSET', 'utf8mb4');
 ```
 
 ### 3. Web Server Setup
-1. Upload all PHP files (`index.php`, `converter.php`, `creator.php`) to your web server
+1. Upload all files to your web server (except for .sql files, unless you want to)
 2. Ensure your server meets the requirements:
    - PHP 7.4 or higher
    - MySQL/MariaDB
