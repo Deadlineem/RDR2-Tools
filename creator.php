@@ -13,7 +13,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'generate') {
         $includes = isset($_POST['includes']) ? json_decode($_POST['includes'], true) : [];
         $namespace = $_POST['namespace'] ?? 'YimMenu::Features';
         $additionalCode = $_POST['additionalCode'] ?? '';
-        $commandPrefix = $_POST['commandPrefix'] ?? '';
+        $onDisableCode = $_POST['onDisableCode'] ?? ''; // Make sure this is always set
         
         if (empty($commandName) || empty($displayName)) {
             echo json_encode(['error' => 'Command name and display name are required']);
@@ -23,12 +23,9 @@ if (isset($_POST['action']) && $_POST['action'] === 'generate') {
         // Clean command name
         $className = ucfirst($commandName);
         $commandId = strtolower($commandName);
-        if (!empty($commandPrefix)) {
-            $commandId = $commandPrefix . $commandId;
-        }
         
         // Generate the code
-        $code = generateCommandCode($commandType, $className, $commandId, $displayName, $description, $includes, $namespace, $additionalCode);
+        $code = generateCommandCode($commandType, $className, $commandId, $displayName, $description, $includes, $namespace, $additionalCode, $onDisableCode);
         
         echo json_encode([
             'success' => true,
@@ -41,22 +38,33 @@ if (isset($_POST['action']) && $_POST['action'] === 'generate') {
     exit;
 }
 
-function generateCommandCode($type, $className, $commandId, $displayName, $description, $includes, $namespace, $additionalCode) {
+function indentCode($code, $indent = "\t\t\t") {
+    if (empty($code)) return $code;
+    
+    // Split into lines, indent each line, then join back
+    $lines = explode("\n", $code);
+    $indented = array_map(function($line) use ($indent) {
+        // Don't indent empty lines
+        if (trim($line) === '') return $line;
+        return $indent . $line;
+    }, $lines);
+    
+    return implode("\n", $indented);
+}
+
+function generateCommandCode($type, $className, $commandId, $displayName, $description, $includes, $namespace, $additionalCode, $onDisableCode) {
     // Base includes based on command type
     $baseIncludes = [];
     switch ($type) {
         case 'looped':
             $baseIncludes[] = 'core/commands/LoopedCommand.hpp';
-			$baseIncludes[] = 'game/backend/Self.hpp';
             break;
         case 'player':
             $baseIncludes[] = 'game/commands/PlayerCommand.hpp';
-			$baseIncludes[] = 'game/backend/Self.hpp';
             break;
         case 'command':
         default:
             $baseIncludes[] = 'core/commands/Command.hpp';
-            $baseIncludes[] = 'game/backend/Self.hpp';
             break;
     }
     
@@ -76,24 +84,25 @@ function generateCommandCode($type, $className, $commandId, $displayName, $descr
     switch ($type) {
         case 'looped':
             $commandTypeName = 'LoopedCommand';
-            $codeContent = !empty($additionalCode) ? $additionalCode : '// Add your code here, dont forget to add includes as needed';
+            $tickCode = !empty($additionalCode) ? indentCode($additionalCode) : "\t\t\t// Add your looped code here";
+            $disableCode = !empty($onDisableCode) ? indentCode($onDisableCode) : "\t\t\t// TODO: Clean up when disabled";
             $classBody = '		virtual void OnTick() override
 		{
-			' . $codeContent . '
+' . $tickCode . '
 		}
 
 		virtual void OnDisable() override
 		{
-			// TODO: Clean up when disabled
+' . $disableCode . '
 		}';
             break;
             
         case 'player':
             $commandTypeName = 'PlayerCommand';
-            $codeContent = !empty($additionalCode) ? $additionalCode : '// Add your code here, dont forget to add includes as needed';
+            $codeContent = !empty($additionalCode) ? indentCode($additionalCode) : "\t\t\t// Add your code here, dont forget to add includes as needed";
             $classBody = '		virtual void OnCall(Player player) override
 		{
-			' . $codeContent . '
+' . $codeContent . '
 		}';
             break;
 
@@ -101,10 +110,10 @@ function generateCommandCode($type, $className, $commandId, $displayName, $descr
         case 'command':
         default:
             $commandTypeName = 'Command';
-            $codeContent = !empty($additionalCode) ? $additionalCode : '// Add your code here, dont forget to add includes as needed';
+            $codeContent = !empty($additionalCode) ? indentCode($additionalCode) : "\t\t\t// Add your code here, dont forget to add includes as needed";
             $classBody = '		virtual void OnCall() override
 		{
-			' . $codeContent . '
+' . $codeContent . '
 		}';
             break;
     }
@@ -135,7 +144,7 @@ function generateCommandCode($type, $className, $commandId, $displayName, $descr
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
     <title>Script Generator - RDR3 Tools</title>
     <style>
-        /* Same styles as before - keeping it compact */
+        /* Reset and base */
         * {
             margin: 0;
             padding: 0;
@@ -173,6 +182,7 @@ function generateCommandCode($type, $className, $commandId, $displayName, $descr
             overflow: auto;
         }
         
+        /* Navbar */
         .navbar {
             background: var(--bg-nav);
             border-bottom: 1px solid var(--border-color);
@@ -396,14 +406,19 @@ function generateCommandCode($type, $className, $commandId, $displayName, $descr
             }
         }
         
+        /* Container */
         .container {
             max-width: 1400px;
             margin: 0 auto;
             padding: 20px;
+            min-height: calc(100vh - var(--nav-height));
+            display: flex;
+            flex-direction: column;
         }
         
         .page-header {
             margin-bottom: 24px;
+            flex-shrink: 0;
         }
         
         .page-header h1 {
@@ -421,10 +436,13 @@ function generateCommandCode($type, $className, $commandId, $displayName, $descr
             margin-top: 4px;
         }
         
+        /* Grid */
         .generator-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 20px;
+            flex: 1;
+            min-height: 0;
         }
         
         @media (max-width: 1024px) {
@@ -433,11 +451,26 @@ function generateCommandCode($type, $className, $commandId, $displayName, $descr
             }
         }
         
+        /* Panels - Now use flex column */
         .panel {
             background: var(--bg-secondary);
             border: 1px solid var(--border-color);
             border-radius: var(--radius);
             padding: 20px;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            overflow: hidden;
+        }
+        
+        /* Left panel - doesn't need to grow as much */
+        .panel:first-child {
+            /* Keep at natural height, but can scroll if needed */
+        }
+        
+        /* Right panel - should fill available space */
+        .panel:last-child {
+            flex: 1;
         }
         
         .panel-title {
@@ -448,6 +481,7 @@ function generateCommandCode($type, $className, $commandId, $displayName, $descr
             display: flex;
             align-items: center;
             gap: 8px;
+            flex-shrink: 0;
         }
         
         .panel-title .badge {
@@ -459,8 +493,10 @@ function generateCommandCode($type, $className, $commandId, $displayName, $descr
             border-radius: 12px;
         }
         
+        /* Form */
         .form-group {
             margin-bottom: 14px;
+            flex-shrink: 0;
         }
         
         .form-group label {
@@ -506,7 +542,7 @@ function generateCommandCode($type, $className, $commandId, $displayName, $descr
             font-family: 'Courier New', monospace;
             font-size: 13px;
             resize: vertical;
-            min-height: 120px;
+            min-height: 80px;
         }
         
         select.form-control {
@@ -518,25 +554,30 @@ function generateCommandCode($type, $className, $commandId, $displayName, $descr
             padding-right: 32px;
         }
         
+        /* Checkbox groups - Make scrollable */
         .checkbox-group {
             display: flex;
             flex-wrap: wrap;
             gap: 8px;
             padding: 8px 0;
+            max-height: 200px;
+            overflow-y: auto;
+            align-content: flex-start;
         }
         
         .checkbox-group label {
             display: flex;
             align-items: center;
-            gap: 6px;
-            font-size: 13px;
+            gap: 4px;
+            font-size: 12px;
             color: var(--text-secondary);
             cursor: pointer;
-            padding: 4px 10px;
+            padding: 3px 8px;
             background: var(--bg-primary);
             border: 1px solid var(--border-color);
             border-radius: 6px;
             transition: all 0.2s ease;
+            white-space: nowrap;
         }
         
         .checkbox-group label:hover {
@@ -553,6 +594,26 @@ function generateCommandCode($type, $className, $commandId, $displayName, $descr
             background: var(--accent-glow);
         }
         
+        .checkbox-category {
+            width: 100%;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-muted);
+            padding: 4px 0;
+            margin-top: 4px;
+            border-bottom: 1px solid var(--border-color);
+            flex-shrink: 0;
+        }
+        
+        /* Code textareas - specifically for code input */
+        .code-textarea {
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            min-height: 80px;
+        }
+        
+        /* Buttons */
         .btn {
             padding: 8px 20px;
             border: none;
@@ -612,23 +673,31 @@ function generateCommandCode($type, $className, $commandId, $displayName, $descr
             background: var(--bg-hover);
         }
         
+        /* Controls */
         .controls {
             display: flex;
             flex-wrap: wrap;
-            gap: 12px;
+            gap: 4px;
             margin-top: 16px;
             align-items: center;
+            flex-shrink: 0;
         }
         
         .controls-group {
             display: flex;
-            gap: 8px;
+            gap: 4px;
             align-items: center;
             flex-wrap: wrap;
         }
         
+        /* Output area */
         .output-area {
             position: relative;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            overflow: hidden;
         }
         
         .output-area .copy-btn {
@@ -637,15 +706,32 @@ function generateCommandCode($type, $className, $commandId, $displayName, $descr
             right: 12px;
             padding: 4px 12px;
             font-size: 12px;
+            z-index: 10;
         }
         
         .output-area textarea {
-            min-height: 400px;
+            flex: 1;
+            width: 100%;
+            min-height: 0;
             font-family: 'Courier New', monospace;
             font-size: 13px;
             line-height: 1.6;
+            padding: 8px 12px;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            resize: vertical;
+            transition: all 0.3s ease;
         }
         
+        .output-area textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+        
+        /* Loading */
         .loading {
             display: none;
             text-align: center;
@@ -669,6 +755,7 @@ function generateCommandCode($type, $className, $commandId, $displayName, $descr
             to { transform: rotate(360deg); }
         }
         
+        /* Toast */
         .toast {
             position: fixed;
             bottom: 24px;
@@ -700,6 +787,7 @@ function generateCommandCode($type, $className, $commandId, $displayName, $descr
             border-color: var(--success);
         }
         
+        /* Templates */
         .template-selector {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -740,6 +828,7 @@ function generateCommandCode($type, $className, $commandId, $displayName, $descr
             color: var(--text-muted);
         }
         
+        /* Filename display */
         .filename-display {
             font-size: 13px;
             color: var(--text-muted);
@@ -748,6 +837,7 @@ function generateCommandCode($type, $className, $commandId, $displayName, $descr
             border-radius: 6px;
             border: 1px solid var(--border-color);
             margin-top: 8px;
+            flex-shrink: 0;
         }
         
         .filename-display strong {
@@ -755,6 +845,7 @@ function generateCommandCode($type, $className, $commandId, $displayName, $descr
             font-family: 'Courier New', monospace;
         }
         
+        /* Responsive */
         @media (max-width: 480px) {
             .container {
                 padding: 12px;
@@ -782,8 +873,8 @@ function generateCommandCode($type, $className, $commandId, $displayName, $descr
             }
             
             .checkbox-group label {
-                font-size: 12px;
-                padding: 3px 8px;
+                font-size: 11px;
+                padding: 2px 6px;
             }
             
             .template-selector {
@@ -791,6 +882,7 @@ function generateCommandCode($type, $className, $commandId, $displayName, $descr
             }
         }
         
+        /* Scrollbar styling */
         ::-webkit-scrollbar {
             width: 6px;
             height: 6px;
@@ -926,12 +1018,6 @@ function generateCommandCode($type, $className, $commandId, $displayName, $descr
                 </div>
                 
                 <div class="form-group">
-                    <label>Command Prefix</label>
-                    <input type="text" class="form-control" id="commandPrefix" placeholder="e.g., toggle, spawn, set (optional)" />
-                    <div class="hint">Prefix for the command ID (e.g., toggle + godmode = togglegodmode)</div>
-                </div>
-                
-                <div class="form-group">
                     <label>Namespace</label>
                     <input type="text" class="form-control" id="namespace" value="YimMenu::Features" />
                 </div>
@@ -939,16 +1025,72 @@ function generateCommandCode($type, $className, $commandId, $displayName, $descr
                 <div class="form-group">
                     <label>Includes</label>
                     <div class="checkbox-group" id="includesGroup">
+                        <div class="checkbox-category">Core/Commands</div>
+                        <label><input type="checkbox" value="core/commands/Command.hpp" /> Command.hpp</label>
+                        <label><input type="checkbox" value="core/commands/LoopedCommand.hpp" /> LoopedCommand.hpp</label>
+                        <label><input type="checkbox" value="core/commands/BoolCommand.hpp" /> BoolCommand.hpp</label>
+                        <label><input type="checkbox" value="core/commands/IntCommand.hpp" /> IntCommand.hpp</label>
+                        <label><input type="checkbox" value="core/commands/FloatCommand.hpp" /> FloatCommand.hpp</label>
+                        <label><input type="checkbox" value="core/commands/StringCommand.hpp" /> StringCommand.hpp</label>
+                        <label><input type="checkbox" value="core/commands/ColorCommand.hpp" /> ColorCommand.hpp</label>
+                        <label><input type="checkbox" value="core/commands/ListCommand.hpp" /> ListCommand.hpp</label>
+                        <label><input type="checkbox" value="core/commands/Vector3Command.hpp" /> Vector3Command.hpp</label>
+                        <label><input type="checkbox" value="core/commands/HotkeySystem.hpp" /> HotkeySystem.hpp</label>
+                        
+                        <div class="checkbox-category">Game/Commands</div>
+                        <label><input type="checkbox" value="game/commands/PlayerCommand.hpp" /> PlayerCommand.hpp</label>
+                        
+                        <div class="checkbox-category">Core/FileMgr</div>
+                        <label><input type="checkbox" value="core/filemgr/FileMgr.hpp" /> FileMgr.hpp</label>
+                        
+                        <div class="checkbox-category">Core/Frontend</div>
+                        <label><input type="checkbox" value="core/frontend/Notifications.hpp" /> Notifications.hpp</label>
+                        
+                        <div class="checkbox-category">Game/Backend</div>
+                        <label><input type="checkbox" value="game/backend/Self.hpp" /> Self.hpp</label>
+                        <label><input type="checkbox" value="game/backend/Players.hpp" /> Players.hpp</label>
                         <label><input type="checkbox" value="game/backend/ScriptMgr.hpp" /> ScriptMgr.hpp</label>
-                        <label><input type="checkbox" value="game/pointers/Pointers.hpp" /> Pointers.hpp</label>
-                        <label><input type="checkbox" value="game/rdr/Enums.hpp" /> Enums.hpp</label>
-                        <label><input type="checkbox" value="game/rdr/Natives.hpp" /> Natives.hpp</label>
-                        <label><input type="checkbox" value="game/rdr/Vehicle.hpp" /> Vehicle.hpp</label>
+                        <label><input type="checkbox" value="game/backend/FiberPool.hpp" /> FiberPool.hpp</label>
+                        <label><input type="checkbox" value="game/backend/NativeHooks.hpp" /> NativeHooks.hpp</label>
+                        
+                        <div class="checkbox-category">Game/RDR</div>
+                        <label><input type="checkbox" value="game/rdr/Entity.hpp" /> Entity.hpp</label>
                         <label><input type="checkbox" value="game/rdr/Ped.hpp" /> Ped.hpp</label>
                         <label><input type="checkbox" value="game/rdr/Player.hpp" /> Player.hpp</label>
-						<label><input type="checkbox" value="game/rdr/Scripts.hpp" /> Scripts.hpp</label>
-						<label><input type="checkbox" value="game/rdr/Object.hpp" /> Object.hpp</label>
+                        <label><input type="checkbox" value="game/rdr/Vehicle.hpp" /> Vehicle.hpp</label>
+                        <label><input type="checkbox" value="game/rdr/Object.hpp" /> Object.hpp</label>
+                        <label><input type="checkbox" value="game/rdr/Network.hpp" /> Network.hpp</label>
+                        <label><input type="checkbox" value="game/rdr/Packet.hpp" /> Packet.hpp</label>
+                        <label><input type="checkbox" value="game/rdr/Scripts.hpp" /> Scripts.hpp</label>
+                        <label><input type="checkbox" value="game/rdr/Pools.hpp" /> Pools.hpp</label>
+                        <label><input type="checkbox" value="game/rdr/Enums.hpp" /> Enums.hpp</label>
+                        <label><input type="checkbox" value="game/rdr/Natives.hpp" /> Natives.hpp</label>
+                        <label><input type="checkbox" value="game/rdr/Nodes.hpp" /> Nodes.hpp</label>
+                        <label><input type="checkbox" value="game/rdr/ScriptFunction.hpp" /> ScriptFunction.hpp</label>
+                        <label><input type="checkbox" value="game/rdr/ScriptGlobal.hpp" /> ScriptGlobal.hpp</label>
+                        <label><input type="checkbox" value="game/rdr/ScriptLocal.hpp" /> ScriptLocal.hpp</label>
+                        
+                        <div class="checkbox-category">Game/RDR/Data</div>
+                        <label><input type="checkbox" value="game/rdr/data/AmmoTypes.hpp" /> AmmoTypes.hpp</label>
+                        <label><input type="checkbox" value="game/rdr/data/ItemTypes.hpp" /> ItemTypes.hpp</label>
+                        <label><input type="checkbox" value="game/rdr/data/PedModels.hpp" /> PedModels.hpp</label>
+                        <label><input type="checkbox" value="game/rdr/data/VehicleModels.hpp" /> VehicleModels.hpp</label>
+                        <label><input type="checkbox" value="game/rdr/data/ObjectModels.hpp" /> ObjectModels.hpp</label>
+                        <label><input type="checkbox" value="game/rdr/data/WeaponTypes.hpp" /> WeaponTypes.hpp</label>
+                        
+                        <div class="checkbox-category">Util</div>
                         <label><input type="checkbox" value="util/Math.hpp" /> Math.hpp</label>
+                        <label><input type="checkbox" value="util/Helpers.hpp" /> Helpers.hpp</label>
+                        <label><input type="checkbox" value="util/Joaat.hpp" /> Joaat.hpp</label>
+                        <label><input type="checkbox" value="util/Chat.hpp" /> Chat.hpp</label>
+                        <label><input type="checkbox" value="util/teleport.hpp" /> teleport.hpp</label>
+                        <label><input type="checkbox" value="util/SpawnObject.hpp" /> SpawnObject.hpp</label>
+                        <label><input type="checkbox" value="util/VehicleSpawner.hpp" /> VehicleSpawner.hpp</label>
+                        <label><input type="checkbox" value="util/Rewards.hpp" /> Rewards.hpp</label>
+                        <label><input type="checkbox" value="util/Protobufs.hpp" /> Protobufs.hpp</label>
+                        <label><input type="checkbox" value="util/network.hpp" /> network.hpp</label>
+                        <label><input type="checkbox" value="util/GraphicsValue.hpp" /> GraphicsValue.hpp</label>
+                        <label><input type="checkbox" value="util/StrToHex.hpp" /> StrToHex.hpp</label>
                     </div>
                     <div class="hint">Select all includes your command needs</div>
                 </div>
@@ -957,6 +1099,12 @@ function generateCommandCode($type, $className, $commandId, $displayName, $descr
                     <label>Custom Code</label>
                     <textarea class="form-control" id="additionalCode" placeholder="// Add your code here, dont forget to add includes as needed&#10;// This will be placed inside OnTick()/OnCall()" rows="4"></textarea>
                     <div class="hint">This code will be placed in the OnTick() or OnCall() method</div>
+                </div>
+                
+                <div class="form-group" id="onDisableGroup" style="display:none;">
+                    <label>OnDisable() Code</label>
+                    <textarea class="form-control" id="onDisableCode" placeholder="// Clean up when disabled" rows="3"></textarea>
+                    <div class="hint">This code will be placed inside OnDisable() method (for LoopedCommand only)</div>
                 </div>
                 
                 <div class="controls">
@@ -979,7 +1127,7 @@ function generateCommandCode($type, $className, $commandId, $displayName, $descr
                 </div>
                 
                 <div class="output-area">
-                    <textarea class="form-control" id="outputArea" placeholder="Generated code will appear here..." readonly style="min-height:400px;"></textarea>
+                    <textarea class="form-control" id="outputArea" placeholder="Generated code will appear here..." readonly></textarea>
                     <button class="btn btn-success copy-btn" onclick="copyOutput()" style="display:none;">📋 Copy</button>
                 </div>
                 
@@ -1063,6 +1211,16 @@ function generateCommandCode($type, $className, $commandId, $displayName, $descr
             }
         });
         
+        // Show/hide OnDisable based on command type
+        document.getElementById('commandType').addEventListener('change', function() {
+            const onDisableGroup = document.getElementById('onDisableGroup');
+            if (this.value === 'looped') {
+                onDisableGroup.style.display = 'block';
+            } else {
+                onDisableGroup.style.display = 'none';
+            }
+        });
+        
         // Generator functions
         function showToast(message, type = '') {
             const toast = document.getElementById('toast');
@@ -1097,7 +1255,8 @@ function generateCommandCode($type, $className, $commandId, $displayName, $descr
                     name: 'godmode',
                     display: 'God Mode',
                     desc: 'Blocks all incoming damage',
-                    code: '// Toggle godmode for the local player\nif (!Self::GetPed())\nreturn;\nif (Self::GetPed().IsDead())\nSelf::GetPed().SetInvincible(false);\nelse\nSelf::GetPed().SetInvincible(true);\nSelf::GetPed().SetTargetActionDisableFlag(13, true);\nSelf::GetPed().SetTargetActionDisableFlag(16, true);\nSelf::GetPed().SetTargetActionDisableFlag(17, true);',
+                    tickCode: '// Toggle godmode for the local player\nif (!Self::GetPed())\n    return;\nif (Self::GetPed().IsDead())\n    Self::GetPed().SetInvincible(false);\nelse\n    Self::GetPed().SetInvincible(true);\nSelf::GetPed().SetTargetActionDisableFlag(13, true);\nSelf::GetPed().SetTargetActionDisableFlag(16, true);\nSelf::GetPed().SetTargetActionDisableFlag(17, true);',
+                    disableCode: '// Disable godmode\nif (Self::GetPed())\n    Self::GetPed().SetInvincible(false);',
                     includes: ['game/backend/Self.hpp']
                 },
                 'command': {
@@ -1105,7 +1264,8 @@ function generateCommandCode($type, $className, $commandId, $displayName, $descr
                     name: 'suicide',
                     display: 'Suicide',
                     desc: 'Kills you instantly',
-                    code: '// Kill the local player\nSelf::GetPed().SetInvincible(false);\nSelf::GetPed().SetHealth(0);',
+                    tickCode: '// Kill the local player\nSelf::GetPed().SetInvincible(false);\nSelf::GetPed().SetHealth(0);',
+                    disableCode: '',
                     includes: ['game/backend/Self.hpp']
                 },
                 'player': {
@@ -1113,7 +1273,8 @@ function generateCommandCode($type, $className, $commandId, $displayName, $descr
                     name: 'cageplayercircus',
                     display: 'Cage Player (Circus)',
                     desc: 'Cages the player using a circus wagon',
-                    code: '// Cage the selected player\nauto coords = player.GetPed().GetPosition();\ncoords.z -= 1.0f;\nObject::Create(0x99C0CFCF, coords);\n',
+                    tickCode: '// Cage the selected player\nauto coords = player.GetPed().GetPosition();\ncoords.z -= 1.0f;\nObject::Create(0x99C0CFCF, coords);',
+                    disableCode: '',
                     includes: ['game/backend/Self.hpp', 'game/rdr/Object.hpp', 'game/rdr/Natives.hpp']
                 }
             };
@@ -1125,7 +1286,16 @@ function generateCommandCode($type, $className, $commandId, $displayName, $descr
             document.getElementById('commandName').value = template.name;
             document.getElementById('displayName').value = template.display;
             document.getElementById('description').value = template.desc;
-            document.getElementById('additionalCode').value = template.code;
+            document.getElementById('additionalCode').value = template.tickCode;
+            document.getElementById('onDisableCode').value = template.disableCode;
+            
+            // Show/hide OnDisable
+            const onDisableGroup = document.getElementById('onDisableGroup');
+            if (type === 'looped') {
+                onDisableGroup.style.display = 'block';
+            } else {
+                onDisableGroup.style.display = 'none';
+            }
             
             // Update includes
             const checkboxes = document.querySelectorAll('#includesGroup input[type="checkbox"]');
@@ -1147,7 +1317,7 @@ function generateCommandCode($type, $className, $commandId, $displayName, $descr
             document.getElementById('displayName').value = '';
             document.getElementById('description').value = '';
             document.getElementById('additionalCode').value = '';
-            document.getElementById('commandPrefix').value = '';
+            document.getElementById('onDisableCode').value = '';
             document.getElementById('outputArea').value = '';
             document.querySelector('.copy-btn').style.display = 'none';
             document.getElementById('lineCount').textContent = '0 lines';
@@ -1161,8 +1331,8 @@ function generateCommandCode($type, $className, $commandId, $displayName, $descr
             const displayName = document.getElementById('displayName').value.trim();
             const description = document.getElementById('description').value.trim();
             const additionalCode = document.getElementById('additionalCode').value;
+            const onDisableCode = document.getElementById('onDisableCode').value;
             const namespace = document.getElementById('namespace').value.trim() || 'YimMenu::Features';
-            const commandPrefix = document.getElementById('commandPrefix').value.trim();
             
             // Get selected includes
             const includes = [];
@@ -1188,7 +1358,7 @@ function generateCommandCode($type, $className, $commandId, $displayName, $descr
                 formData.append('includes', JSON.stringify(includes));
                 formData.append('namespace', namespace);
                 formData.append('additionalCode', additionalCode);
-                formData.append('commandPrefix', commandPrefix);
+                formData.append('onDisableCode', onDisableCode);
                 
                 const response = await fetch(window.location.href, {
                     method: 'POST',
@@ -1307,6 +1477,12 @@ function generateCommandCode($type, $className, $commandId, $displayName, $descr
         
         // Auto-update filename
         updateFilename();
+        
+        // Hide OnDisable initially if not looped
+        const initialType = document.getElementById('commandType').value;
+        if (initialType !== 'looped') {
+            document.getElementById('onDisableGroup').style.display = 'none';
+        }
         
         // Checkbox visual feedback
         document.querySelectorAll('#includesGroup input[type="checkbox"]').forEach(cb => {

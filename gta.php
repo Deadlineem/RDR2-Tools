@@ -4,7 +4,7 @@
 // =============================================
 // Set to false for GitHub Pages (JSON mode)
 // Set to true for traditional hosting (Database mode)
-define('USE_DATABASE', true);
+define('USE_DATABASE', false);
 // =============================================
 
 // Navigation (always needed)
@@ -141,7 +141,7 @@ if (USE_DATABASE) {
 // =============================================
 if (!USE_DATABASE) {
     // --- JSON Data Fetching ---
-    $jsonUrl = 'https://alloc8or.re/rdr3/nativedb/static/natives.json?_=1784580002';
+    $jsonUrl = 'https://alloc8or.re/gta5/nativedb/static/natives.json?_=1788585003';
     $jsonData = null;
     $nativeData = []; // Flat list of all natives
     $namespaceData = []; // Namespace info with counts
@@ -345,7 +345,7 @@ function getReturnDescription($type) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>RDR2 NativeDB Explorer</title>
+    <title>GTA5 NativeDB Explorer</title>
     <style>
         /* Reset and base */
         * {
@@ -355,23 +355,23 @@ function getReturnDescription($type) {
         }
         
         :root {
-            --bg-primary: #120a0a;
-            --bg-secondary: #1a0f0f;
-            --bg-card: #2a1a1a;
-            --bg-hover: #3a2424;
-            --bg-detail: #120a0a;
-            --bg-nav: #100a0a;
-            --text-primary: #f5e8e8;
-            --text-secondary: #b58a8a;
-            --text-muted: #8a5a5a;
-            --text-accent: #f87171;
-            --accent: #ef4444;
-            --accent-hover: #dc2626;
-            --accent-glow: rgba(239, 68, 68, 0.15);
-            --border-color: #3a1a1a;
+            --bg-primary: #0a120a;
+            --bg-secondary: #0f1a0f;
+            --bg-card: #1a2a1a;
+            --bg-hover: #243a24;
+            --bg-detail: #0a120a;
+            --bg-nav: #0a100a;
+            --text-primary: #e8f5e8;
+            --text-secondary: #8ab58a;
+            --text-muted: #5a8a5a;
+            --text-accent: #4ade80;
+            --accent: #22c55e;
+            --accent-hover: #16a34a;
+            --accent-glow: rgba(34, 197, 94, 0.15);
+            --border-color: #1a3a1a;
             --success: #4ade80;
             --warning: #fbbf24;
-            --danger: #ef4444;
+            --danger: #f87171;
             --radius: 12px;
             --shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
             --nav-height: 50px;
@@ -448,7 +448,7 @@ function getReturnDescription($type) {
         
         .nav-links a.active {
             background: var(--accent);
-            color: #120a0a;
+            color: #0a120a;
         }
         
         .nav-links a .nav-badge {
@@ -740,7 +740,7 @@ function getReturnDescription($type) {
             min-width: 120px;
             max-width: 180px;
             appearance: none;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23b58a8a' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238ab58a' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
             background-repeat: no-repeat;
             background-position: right 10px center;
             padding-right: 32px;
@@ -1004,7 +1004,7 @@ function getReturnDescription($type) {
             display: flex;
             gap: 12px;
             padding: 5px 0;
-            border-bottom: 1px solid rgba(58, 26, 26, 0.3);
+            border-bottom: 1px solid rgba(26, 58, 26, 0.3);
             font-size: 13px;
         }
         
@@ -1013,7 +1013,7 @@ function getReturnDescription($type) {
         }
         
         .param-type {
-            color: var(--warning);
+            color: var(--success);
             font-weight: 500;
             min-width: 80px;
             font-family: 'Courier New', monospace;
@@ -1029,7 +1029,7 @@ function getReturnDescription($type) {
             gap: 10px;
             align-items: center;
             padding: 6px 0;
-            border-bottom: 1px solid rgba(58, 26, 26, 0.3);
+            border-bottom: 1px solid rgba(26, 58, 26, 0.3);
             font-size: 13px;
             flex-wrap: wrap;
         }
@@ -1039,7 +1039,7 @@ function getReturnDescription($type) {
         }
         
         .param-editor .param-type {
-            color: var(--warning);
+            color: var(--success);
             font-weight: 500;
             min-width: 80px;
             font-family: 'Courier New', monospace;
@@ -1130,7 +1130,7 @@ function getReturnDescription($type) {
         
         .param-editor .btn-small.btn-apply-all:hover {
             background: var(--success);
-            color: #120a0a;
+            color: #0a120a;
         }
         
         .param-editor .btn-small.btn-clear-all {
@@ -1139,7 +1139,7 @@ function getReturnDescription($type) {
         
         .param-editor .btn-small.btn-clear-all:hover {
             background: var(--text-muted);
-            color: #120a0a;
+            color: #0a120a;
         }
         
         .param-row {
@@ -1287,7 +1287,7 @@ function getReturnDescription($type) {
         
         .btn-primary {
             background: var(--accent);
-            color: #120a0a;
+            color: #0a120a;
             border-color: var(--accent);
         }
         
@@ -1298,7 +1298,7 @@ function getReturnDescription($type) {
         
         .btn-success {
             background: var(--success);
-            color: #120a0a;
+            color: #0a120a;
             border-color: var(--success);
         }
         
@@ -1326,7 +1326,7 @@ function getReturnDescription($type) {
         .pagination .btn.active {
             background: var(--accent);
             border-color: var(--accent);
-            color: #120a0a;
+            color: #0a120a;
         }
         
         .pagination .btn:disabled {
@@ -1573,7 +1573,7 @@ function getReturnDescription($type) {
         
         ::selection {
             background: var(--accent);
-            color: #120a0a;
+            color: #0a120a;
         }
     </style>
 </head>
@@ -1582,7 +1582,7 @@ function getReturnDescription($type) {
     <nav class="navbar">
         <a href="rdr2nativedb.php" class="nav-brand">
             <span class="brand-icon">🎮</span>
-            RDR2 NativeDB
+            GTA5 NativeDB
         </a>
         
         <ul class="nav-links">

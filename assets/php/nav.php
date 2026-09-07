@@ -1,27 +1,23 @@
 <?php
 $navItems = [
-    'natives' => [
-        'label' => '📋 Natives',
+    'rdr2natives' => [
+        'label' => '📋 RDR2 Natives',
         'url' => 'index.php',
         'active' => false
     ],
-    'tools' => [
-        'label' => '🔧 Tools',
-        'url' => '#',
-        'active' => false,
-        'submenu' => [
-            ['label' => '🔄 List Converter', 'url' => 'converter.php'],
-			['label' => '⚡ Script Generator', 'url' => 'creator.php'],
-        ]
-    ],
-    'documentation' => [
-        'label' => '📚 Docs',
-        'url' => '#',
+	'gta5natives' => [
+        'label' => '📋 GTA5 Natives',
+        'url' => 'gta.php',
         'active' => false
     ],
-    'about' => [
-        'label' => 'ℹ️ About',
-        'url' => '#',
+	'converter' => [
+        'label' => '🔄 List Converter',
+        'url' => 'converter.php',
+        'active' => false
+    ],
+	'natives' => [
+        'label' => '⚡ Script Generator',
+        'url' => 'creator.php',
         'active' => false
     ]
 ];
