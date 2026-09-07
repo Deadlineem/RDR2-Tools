@@ -1,4 +1,4 @@
-# RDR2/RDR3 NativeDB Tools
+# RDR2/GTA5 NativeDB Tools
 
 A comprehensive web-based toolkit for managing and converting Red Dead Redemption 2/3 native function data, with tools for list conversion and script generation.
 
