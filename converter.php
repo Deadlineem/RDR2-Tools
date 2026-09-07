@@ -384,9 +384,8 @@ function convertOutput($items, $format) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>List Converter - RDR3 Tools</title>
+    <title>List Converter - Tools</title>
     <style>
-        /* Same base styles as main page */
         * {
             margin: 0;
             padding: 0;
@@ -982,9 +981,9 @@ function convertOutput($items, $format) {
 <body>
     <!-- Navigation - Same as main page -->
     <nav class="navbar">
-        <a href="rdr2nativedb.php" class="nav-brand">
-            <span class="brand-icon">🎮</span>
-            RDR3 Tools
+        <a href="converter.php" class="nav-brand">
+            <span class="brand-icon">♻️</span>
+            List Converter
         </a>
         
         <ul class="nav-links">
@@ -1033,7 +1032,7 @@ function convertOutput($items, $format) {
 
     <div class="container">
         <div class="page-header">
-            <h1>🔄 List Converter</h1>
+            <h1>♻️ List Converter</h1>
             <p>Convert item lists between different formats. Supports JSON, INI, C++, Lua, and plain text.</p>
         </div>
         

@@ -4,7 +4,7 @@
 // =============================================
 // Set to false for GitHub Pages (JSON mode)
 // Set to true for traditional hosting (Database mode)
-define('USE_DATABASE', false);
+define('USE_DATABASE', true);
 // =============================================
 
 // Navigation (always needed)
@@ -346,6 +346,7 @@ function getReturnDescription($type) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
     <title>GTA5 NativeDB Explorer</title>
+	<link rel="icon" type="image/png" href="assets/images/gta5ndb.png">
     <style>
         /* Reset and base */
         * {
@@ -1580,8 +1581,8 @@ function getReturnDescription($type) {
 <body>
     <!-- Navigation -->
     <nav class="navbar">
-        <a href="rdr2nativedb.php" class="nav-brand">
-            <span class="brand-icon">🎮</span>
+        <a href="gta.php" class="nav-brand">
+            <span class="brand-icon"><img width="55px" src="assets/images/gta5ndb.png" /></span>
             GTA5 NativeDB
         </a>
         
@@ -2330,7 +2331,7 @@ function getReturnDescription($type) {
 			signature += paramParts.join(', ');
 			signature += ')';
 			
-			copyText('✅ Copied signature: ' + signature);
+			copyText(signature);
 		}
 
 		// Initialize the preview

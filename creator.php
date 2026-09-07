@@ -142,7 +142,7 @@ function generateCommandCode($type, $className, $commandId, $displayName, $descr
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>Script Generator - RDR3 Tools</title>
+    <title>Script Generator - Tools</title>
     <style>
         /* Reset and base */
         * {
@@ -909,9 +909,9 @@ function generateCommandCode($type, $className, $commandId, $displayName, $descr
 </head>
 <body>
     <nav class="navbar">
-        <a href="index.php" class="nav-brand">
-            <span class="brand-icon">🎮</span>
-            RDR3 Tools
+        <a href="creator.php" class="nav-brand">
+            <span class="brand-icon">⚡</span>
+            Script Generator
         </a>
         
         <ul class="nav-links">

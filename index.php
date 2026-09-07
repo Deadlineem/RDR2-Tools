@@ -4,7 +4,7 @@
 // =============================================
 // Set to false for GitHub Pages (JSON mode)
 // Set to true for traditional hosting (Database mode)
-define('USE_DATABASE', false);
+define('USE_DATABASE', true);
 // =============================================
 
 // Navigation (always needed)
@@ -346,6 +346,7 @@ function getReturnDescription($type) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
     <title>RDR2 NativeDB Explorer</title>
+	<link rel="icon" type="image/png" href="assets/images/rdr2ndb.png">
     <style>
         /* Reset and base */
         * {
@@ -1581,7 +1582,7 @@ function getReturnDescription($type) {
     <!-- Navigation -->
     <nav class="navbar">
         <a href="rdr2nativedb.php" class="nav-brand">
-            <span class="brand-icon">🎮</span>
+            <span class="brand-icon"><img width="55px" src="assets/images/rdr2ndb.png" /></span>
             RDR2 NativeDB
         </a>
         
@@ -2330,7 +2331,7 @@ function getReturnDescription($type) {
 			signature += paramParts.join(', ');
 			signature += ')';
 			
-			copyText('✅ Copied signature: ' + signature);
+			copyText(signature);
 		}
 
 		// Initialize the preview
