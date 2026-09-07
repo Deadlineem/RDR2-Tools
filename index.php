@@ -4,7 +4,7 @@
 // =============================================
 // Set to false for GitHub Pages (JSON mode)
 // Set to true for traditional hosting (Database mode)
-define('USE_DATABASE', true);
+define('USE_DATABASE', false);
 // =============================================
 
 // Navigation (always needed)
