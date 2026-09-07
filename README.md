@@ -4,7 +4,7 @@ A comprehensive web-based toolkit for managing and converting Red Dead Redemptio
 
 ## 📦 Features
 
-### 📋 NativeDB Explorer (index.php)
+### 📋 NativeDB Explorers (index.php/gta.php)
 Browse and search through all RDR2/GTA5 native functions with a modern, responsive interface. Features live search, namespace filtering, and detailed native information display.
 
 ### 🔄 List Converter (converter.php)
