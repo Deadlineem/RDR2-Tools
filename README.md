@@ -151,6 +151,10 @@ The Script Generator creates code compatible with:
 
 This project is for educational purposes only. Use responsibly and in accordance with Rockstar Games' terms of service.
 
+## ⚠️ Redistribution
+
+You are free to fork and contribute to this repository as well as redistribute it as your own and make changes, all that is asked is that you **PLEASE keep the project FREE + OPEN SOURCED..  There is no official branding or copyrights/trademarks involved in this project, however, crediting this repository if you decide to redistribute this would be a generous thing to do.**
+
 ## 🤝 Contributing
 
 Found a bug or want to add a feature? Feel free to submit a pull request or open an issue on the repository.
