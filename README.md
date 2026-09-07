@@ -1,11 +1,11 @@
 # RDR2/GTA5 NativeDB Tools
 
-A comprehensive web-based toolkit for managing and converting Red Dead Redemption 2/3 native function data, with tools for list conversion and script generation.
+A comprehensive web-based toolkit for managing and converting Red Dead Redemption 2/Grand Theft Auto 5 native function data, with tools for list conversion and script generation.
 
 ## 📦 Features
 
 ### 📋 NativeDB Explorer (index.php)
-Browse and search through all RDR2/RDR3 native functions with a modern, responsive interface. Features live search, namespace filtering, and detailed native information display.
+Browse and search through all RDR2/GTA5 native functions with a modern, responsive interface. Features live search, namespace filtering, and detailed native information display.
 
 ### 🔄 List Converter (converter.php)
 Convert item lists between multiple formats including JSON, INI, C++, Lua, CSV, PHP arrays, and plain text. Supports importing from URLs or pasted content.
